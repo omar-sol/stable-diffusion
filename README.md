@@ -1,2 +1,2 @@
-# stable-diffusion-demo
-Stable diffusion demo
+# stable-diffusion
+Stable diffusion
