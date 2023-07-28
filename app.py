@@ -68,7 +68,7 @@ with gr.Blocks() as demo:
         with gr.Row():
             with gr.Column(scale=1):
                 model = gr.Textbox(
-                    value="stabilityai/stable-diffusion-xl-base-0.9",
+                    value="stabilityai/stable-diffusion-xl-base-1.0",
                     label="Model",
                     interactive=False,
                     show_label=True,
@@ -138,7 +138,7 @@ with gr.Blocks() as demo:
 
 if __name__ == "__main__":
     pipe = DiffusionPipeline.from_pretrained(
-        "stabilityai/stable-diffusion-xl-base-0.9",
+        "stabilityai/stable-diffusion-xl-base-1.0",
         torch_dtype=torch.float16,
         use_safetensors=True,
         variant="fp16",
@@ -147,7 +147,7 @@ if __name__ == "__main__":
     pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
 
     refiner = StableDiffusionXLImg2ImgPipeline.from_pretrained(
-        "stabilityai/stable-diffusion-xl-refiner-0.9",
+        "stabilityai/stable-diffusion-xl-refiner-1.0",
         torch_dtype=torch.float16,
         use_safetensors=True,
         variant="fp16",
