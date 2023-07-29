@@ -38,7 +38,7 @@ def generate(
     if scheduler == "DPMSolverMultistepScheduler":
         pipe.scheduler = DPMSolverMultistepScheduler.from_config(pipe.scheduler.config)
 
-    prompt_dir = (prompt[:200] + '..') if len(prompt) > 200 else prompt
+    prompt_dir = (prompt[:200] + "..") if len(prompt) > 200 else prompt
     prompt_dir = prompt_dir.replace(" ", "_")
     Path(f"outputs_gradio/{prompt_dir}").mkdir(parents=True, exist_ok=True)
 
@@ -110,7 +110,7 @@ with gr.Blocks() as demo:
                         value=40, minimum=1, maximum=130, step=1, label="Steps"
                     )
                 cfg_scale = gr.Slider(
-                    value=7.5, minimum=1, maximum=30, step=1, label="CFG Scale"
+                    value=7.5, minimum=1, maximum=30, step=0.5, label="CFG Scale"
                 )
 
                 btn1 = gr.Button("Generate", variant="primary")
@@ -139,11 +139,13 @@ with gr.Blocks() as demo:
 if __name__ == "__main__":
     pipe = DiffusionPipeline.from_pretrained(
         "stabilityai/stable-diffusion-xl-base-1.0",
+        # custom_pipeline="lpw_stable_diffusion",
         torch_dtype=torch.float16,
         use_safetensors=True,
         variant="fp16",
     )
     pipe.to("cuda")
+    # pipe.load_lora_weights("lora-trained-xl-1.0")
     pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
 
     refiner = StableDiffusionXLImg2ImgPipeline.from_pretrained(
