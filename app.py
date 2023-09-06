@@ -8,14 +8,11 @@ from diffusers import (
     StableDiffusionXLImg2ImgPipeline,
     EulerDiscreteScheduler,
     DPMSolverMultistepScheduler,
+    AutoencoderKL,
 )
 import torch
 from dotenv import load_dotenv
 from huggingface_hub import login
-
-load_dotenv(".env")
-HUGGINGFACE_TOKEN = os.environ.get("HUGGINGFACE_TOKEN")
-login(token=HUGGINGFACE_TOKEN)
 
 
 def generate(
@@ -43,7 +40,7 @@ def generate(
     Path(f"outputs_gradio/{prompt_dir}").mkdir(parents=True, exist_ok=True)
 
     list_paths = []
-    use_refiner = True
+    use_refiner = False
     for i in progress.tqdm(range(batch_count)):
         image = pipe(
             prompt=prompt,
@@ -55,7 +52,8 @@ def generate(
             guidance_scale=cfg_scale,
             output_type="latent" if use_refiner else "pil",
         ).images[0]
-        image = refiner(prompt=prompt, image=image[None, :]).images[0]
+        # if use_refiner:
+            # image = refiner(prompt=prompt, image=image[None, :]).images[0]
         image.save(f"outputs_gradio/{prompt_dir}/image_{i+1}_{seed}.png")
         list_paths.append(f"outputs_gradio/{prompt_dir}/image_{i+1}_{seed}.png")
 
@@ -137,23 +135,27 @@ with gr.Blocks() as demo:
     )
 
 if __name__ == "__main__":
+
+    vae = AutoencoderKL.from_pretrained("madebyollin/sdxl-vae-fp16-fix", torch_dtype=torch.float16)
     pipe = DiffusionPipeline.from_pretrained(
         "stabilityai/stable-diffusion-xl-base-1.0",
         # custom_pipeline="lpw_stable_diffusion",
+        vae=vae,
         torch_dtype=torch.float16,
         use_safetensors=True,
         variant="fp16",
     )
     pipe.to("cuda")
-    # pipe.load_lora_weights("lora-trained-xl-1.0")
+    # pipe.load_lora_weights("lora-trained-xl-1.4/checkpoint-200")
     pipe.unet = torch.compile(pipe.unet, mode="reduce-overhead", fullgraph=True)
+    
 
-    refiner = StableDiffusionXLImg2ImgPipeline.from_pretrained(
-        "stabilityai/stable-diffusion-xl-refiner-1.0",
-        torch_dtype=torch.float16,
-        use_safetensors=True,
-        variant="fp16",
-    )
-    refiner.to("cuda")
+    # refiner = StableDiffusionXLImg2ImgPipeline.from_pretrained(
+    #     "stabilityai/stable-diffusion-xl-refiner-1.0",
+    #     torch_dtype=torch.float16,
+    #     use_safetensors=True,
+    #     variant="fp16",
+    # )
+    # refiner.to("cuda")
     demo.queue(concurrency_count=1)
     demo.launch()
